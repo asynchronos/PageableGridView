@@ -1,0 +1,192 @@
+﻿Option Strict On
+Option Explicit On
+
+Imports System
+Imports System.Linq
+Imports System.Collections.Generic
+Imports System.Collections
+Imports System.ComponentModel
+Imports System.Drawing.Design
+Imports System.Text
+Imports System.Web
+Imports System.Web.UI
+Imports System.Web.UI.WebControls
+Imports CustomControls
+
+Namespace MattBerseth.WebControls
+    ''' <summary> 
+    ''' ก่อนคอมไพล์ให้ inculde เข้า project ก่อน
+    ''' วิธีคอมไพล์เป็น dll ให้ใช้คำสั่ง vbc ใน C:\WINDOWS\Microsoft.NET\Framework\versionXX\ (เซ็ต Path ที่Environmentก่อน จะได้ไปใช้ command ที่ไหนก็ได้)
+    ''' เข้า command line แล้วไปที่ path ที่ไฟล์ที่จะสร้าง dll เช่น
+    ''' D:\workspaces\SMEWebSolution\PageableGridView\App_Code\control>
+    ''' แล้วพิมcommandดังนี้(กรณีไฟล์ vb)
+    ''' vbc /t:library /out:D:\workspaces\SMEWebSolution\PageableGridView\Bin\PageableGridView.dll /r:D:\workspaces\SMEWebSolution\PageableGridView\Bin\CustomControls.dll PageableGridView.vb
+    ''' </summary> 
+    <ToolboxData("<{0}:PageableGridView runat=server></{0}:PageableGridView>")> _
+    Public Class PageableGridView
+        Inherits GridView
+        Implements IPageableItemContainer
+
+        '''' <summary> 
+        '''' TotalRowCountAvailable event key 
+        '''' </summary> 
+        'Private Shared ReadOnly EventTotalRowCountAvailable As New Object()
+
+        ''' <summary> 
+        ''' 
+        ''' </summary> 
+        ''' <param name="dataSource"></param> 
+        ''' <param name="dataBinding"></param> 
+        ''' <returns></returns> 
+        Protected Overloads Overrides Function CreateChildControls(ByVal dataSource As IEnumerable, ByVal dataBinding As Boolean) As Integer
+            
+            Dim rows As Integer = MyBase.CreateChildControls(dataSource, dataBinding)
+
+            If Not IsNothing(dataSource) Then
+                ' if the paging feature is enabled, determine 
+                ' the total number of rows in the datasource 
+                If Me.AllowPaging Then
+                    ' if we are databinding, use the number of rows that were created, 
+                    ' otherwise cast the datasource to an Collection and use that as the count 
+                    'Dim totalRowCount As Integer = DirectCast(IIf(dataBinding, rows, DirectCast(dataSource, ICollection).Count), Integer)
+                    Dim totalRowCount As Integer = Nothing
+
+                    If IsBoundUsingDataSourceID And dataBinding Then
+                        totalRowCount = _GetTotalRowsFromDataSource(dataSource)
+                    Else
+                        totalRowCount = _GetSourceCount(dataSource)
+                    End If
+
+                    ' raise the row count available event 
+                    Dim pageableItemContainer As IPageableItemContainer = TryCast(Me, IPageableItemContainer)
+                    Me.OnTotalRowCountAvailable(New PageEventArgs(pageableItemContainer.StartRowIndex, pageableItemContainer.MaximumRows, totalRowCount))
+
+                    ' make sure the top and bottom pager rows are not visible 
+                    If Me.TopPagerRow IsNot Nothing Then
+                        Me.TopPagerRow.Visible = False
+                    End If
+
+                    If Me.BottomPagerRow IsNot Nothing Then
+                        Me.BottomPagerRow.Visible = False
+                    End If
+                End If
+            End If
+
+            Return rows
+        End Function
+
+
+#Region "Gets row count from SqlDataSource and the like..."
+        Protected Function _GetTotalRowsFromDataSource(ByVal dataSource As IEnumerable) As Integer
+            Dim result As Integer = Nothing
+
+            Dim view As DataSourceView = Me.GetData()
+
+            If (Me.AllowPaging And view.CanInsert And view.CanRetrieveTotalRowCount) Then
+                result = MyBase.SelectArguments.TotalRowCount
+            Else
+                result = (PageIndex * PageSize) + _GetSourceCount(dataSource)
+            End If
+
+            Return result
+        End Function
+
+        Protected Function _GetSourceCount(ByVal dataSource As IEnumerable) As Integer
+            Dim result As Integer = Nothing
+
+            Dim source As ICollection = DirectCast(dataSource, ICollection)
+
+            If Not IsNothing(source) Then
+                result = source.Count
+            Else
+                result = DirectCast((From x In dataSource.OfType(Of Object)() Select 1), IEnumerable(Of Integer)).Sum
+            End If
+
+            Return result
+        End Function
+
+#End Region
+
+#Region "IPageableItemContainer Interface"
+
+        ''' <summary> 
+        ''' 
+        ''' </summary> 
+        ''' <param name="startRowIndex"></param> 
+        ''' <param name="maximumRows"></param> 
+        ''' <param name="databind"></param> 
+        Private Sub SetPageProperties(ByVal startRowIndex As Integer, ByVal maximumRows As Integer, ByVal databind As Boolean) Implements IPageableItemContainer.SetPageProperties
+            Dim newPageIndex As Integer = CInt(Math.Floor(startRowIndex / maximumRows))
+            Me.PageSize = maximumRows
+
+            If Me.PageIndex <> newPageIndex Then
+                Dim isCanceled As Boolean = False
+                If databind Then
+                    ' create the event args and raise the event 
+                    Dim args As New GridViewPageEventArgs(newPageIndex)
+                    Me.OnPageIndexChanging(args)
+
+                    isCanceled = args.Cancel
+                    newPageIndex = args.NewPageIndex
+                End If
+
+                ' if the event wasn't cancelled 
+                ' go ahead and change the paging values 
+                If Not isCanceled Then
+                    Me.PageIndex = newPageIndex
+
+                    If databind Then
+                        Me.OnPageIndexChanged(EventArgs.Empty)
+                    End If
+                End If
+
+                If databind Then
+                    Me.RequiresDataBinding = True
+                End If
+            End If
+        End Sub
+
+        ''' <summary> 
+        ''' 
+        ''' </summary> 
+        Private ReadOnly Property StartRowIndex() As Integer Implements IPageableItemContainer.StartRowIndex
+            Get
+                Return Me.PageSize * Me.PageIndex
+            End Get
+        End Property
+
+        ''' <summary> 
+        ''' 
+        ''' </summary> 
+        Private ReadOnly Property MaximumRows() As Integer Implements IPageableItemContainer.MaximumRows
+            Get
+                Return Me.PageSize
+            End Get
+        End Property
+
+
+        '''' <summary> 
+        '''' 
+        '''' </summary> 
+        'Protected Custom Event TotalRowCountAvailable As EventHandler(Of PageEventArgs) Implements IPageableItemContainer.TotalRowCountAvailable
+        '    AddHandler(ByVal value As EventHandler(Of PageEventArgs))
+        '        MyBase.Events.[AddHandler](PageableGridView.EventTotalRowCountAvailable, value)
+        '    End AddHandler
+        '    RemoveHandler(ByVal value As EventHandler(Of PageEventArgs))
+        '        MyBase.Events.[RemoveHandler](PageableGridView.EventTotalRowCountAvailable, value)
+        '    End RemoveHandler
+        'End Event
+
+        ''' <summary> 
+        ''' 
+        ''' </summary> 
+        ''' <param name="e"></param> 
+        Protected Overridable Sub OnTotalRowCountAvailable(ByVal e As PageEventArgs)
+            RaiseEvent TotalRowCountAvailable(Me, e)
+        End Sub
+
+        Public Event TotalRowCountAvailable(ByVal sender As Object, ByVal e As System.Web.UI.WebControls.PageEventArgs) Implements System.Web.UI.WebControls.IPageableItemContainer.TotalRowCountAvailable
+#End Region
+
+    End Class
+End Namespace
