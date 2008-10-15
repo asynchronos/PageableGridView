@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Web Developer Express 2008
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "PageableGridView", ".", "{724E0113-4E81-4148-A307-8524822CE08E}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.VirtualPath = "/PageableGridView"
+		Debug.AspNetCompiler.PhysicalPath = "..\..\..\..\workspaces\PageableGridView\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\PageableGridView\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/PageableGridView"
+		Release.AspNetCompiler.PhysicalPath = "..\..\..\..\workspaces\PageableGridView\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\PageableGridView\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "1472"
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{724E0113-4E81-4148-A307-8524822CE08E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{724E0113-4E81-4148-A307-8524822CE08E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
